@@ -1,23 +1,54 @@
 import React, { useContext, useState } from "react";
 import styles from "../Home/home.module.scss";
 import { useGetProductQuery } from "../../service/productApi";
-import { Col, Flex, Row } from "antd";
+import { Col, Row } from "antd";
 import ShoppingBasketIcon from "@mui/icons-material/ShoppingBasket";
 import { BasketContext } from "../../context/basketContext";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet";
 import Button from "@mui/material/Button";
-import { TextField } from "@mui/material";
+import { TextField, InputLabel, MenuItem, FormControl, Select } from "@mui/material";
 import FacebookIcon from "@mui/icons-material/Facebook";
 import TwitterIcon from "@mui/icons-material/Twitter";
 import InstagramIcon from "@mui/icons-material/Instagram";
 import PinterestIcon from "@mui/icons-material/Pinterest";
-import Twitter from "@mui/icons-material/Twitter";
+import { FavContext } from "../../context/wishlistContext";
+import FavoriteIcon from '@mui/icons-material/Favorite';
+
 const Home = () => {
   const { data: products, refetch } = useGetProductQuery();
   const { basket, setBasket } = useContext(BasketContext);
+  const{fav,setFav}=useContext(FavContext);
   const [search, setSearch] = useState("");
-  // let filteredData=products ? products.data.filter((product)=>product.title.toLowerCase().includes(search.toLowerCase()))
+  const [sort, setSort] = useState("");
+
+  const handleChange = (event) => {
+    setSort(event.target.value);
+  };
+
+  let filteredData = products
+    ? products.data.filter((product) =>
+        product.title.toLowerCase().includes(search.toLowerCase())
+      )
+    : [];
+
+  if (sort === "asc") {
+    filteredData = filteredData.sort((a, b) => a.price - b.price);
+  } else if (sort === "desc") {
+    filteredData = filteredData.sort((a, b) => b.price - a.price);
+  }
+
+  const handleWishlist=(product)=>{
+      const addToFav=fav.find((x)=>x._id==product._id);
+      if(!addToFav){
+        setFav([...fav,product]);
+        localStorage.setItem("fav",JSON.stringify([...fav,product]));
+      } else{
+        const uptadeFav=fav.filter((x)=>x._id!=product._id);
+        setFav(uptadeFav);
+        localStorage.setItem("fav",JSON.stringify("fav",uptadeFav))
+      }
+  }
   return (
     <>
       <div className="application">
@@ -26,7 +57,6 @@ const Home = () => {
           <title>Aytac Shop Page</title>
           <link rel="canonical" href="http://mysite.com/example" />
         </Helmet>
-        ...
       </div>
       <section>
         <div className={styles.sect1}>
@@ -51,16 +81,16 @@ const Home = () => {
                 alt=""
               />
               <div className={styles.cat}>
-              <p>WOMAN'S</p>
+                <p>WOMAN'S</p>
               </div>
             </Col>
-            <Col span={8}sm={24} lg={8} md={12}>
+            <Col span={8} sm={24} lg={8} md={12}>
               <img
                 src="https://preview.colorlib.com/theme/coloshop/images/banner_2.jpg"
                 alt=""
               />
               <div className={styles.cat}>
-              <p>ACCESSORIES'S</p>
+                <p>ACCESSORIES'S</p>
               </div>
             </Col>
             <Col span={8} sm={24} lg={8} md={12}>
@@ -69,18 +99,41 @@ const Home = () => {
                 alt=""
               />
               <div className={styles.cat}>
-              <p>MEN'S</p>
+                <p>MEN'S</p>
               </div>
-            
             </Col>
           </Row>
         </div>
       </section>
+
       <section>
         <div className={styles.sect2}>
           <div className="container">
             <h2>New Arrivals</h2>
             <div className={styles.hr}></div>
+            <TextField
+              id="outlined-basic"
+              label="Search Products"
+              variant="outlined"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <FormControl variant="standard" sx={{ m: 1, minWidth: 120 }}>
+              <InputLabel id="sort-label">Sort</InputLabel>
+              <Select
+                labelId="sort-label"
+                id="sort"
+                value={sort}
+                onChange={handleChange}
+                label="Sort"
+              >
+                <MenuItem value="">
+                  <em>None</em>
+                </MenuItem>
+                <MenuItem value="asc">Price: Low to High</MenuItem>
+                <MenuItem value="desc">Price: High to Low</MenuItem>
+              </Select>
+            </FormControl>
             <hr style={{ color: "red" }} />
             <Row
               gutter={{
@@ -91,54 +144,62 @@ const Home = () => {
               }}
             >
               <div className={styles.cards}>
-                {products &&
-                  products.data.map((product) => (
-                    <Col className="gutter-row" span={6} sm={24} lg={8} md={12}>
-                      <div className={styles.card}>
-                        <img src={product.img} alt="" />
-                        <h3>{product.title}</h3>
-                        <div className={styles.prices}>
-                          <p>${product.price}</p>
-                          <span>${product.discount}</span>
-                        </div>
-                        <div className={styles.button}>
-                          <Button
-                            onClick={() => {
-                              let dublicateItem = basket.find(
-                                (x) => x._id == product._id
-                              );
-                              if (dublicateItem) {
-                                dublicateItem.count += 1;
-                                setBasket([...basket]);
-                                localStorage.setItem(
-                                  "basket",
-                                  JSON.stringify([...basket])
-                                );
-                              } else {
-                                const newBasket = { ...product };
-                                newBasket.count = 1;
-                                setBasket([...basket, newBasket]);
-                                localStorage.setItem(
-                                  "basket",
-                                  JSON.stringify([...basket, newBasket])
-                                );
-                              }
-                            }}
-                          >
-                            <ShoppingBasketIcon style={{ color: "black" }} />
-                          </Button>
-                          <button className={styles.detail}>
-                            <Link
-                              to={`detail/${product._id}`}
-                              style={{ textDecoration: "none", color: "black" }}
-                            >
-                              Detail
-                            </Link>
-                          </button>
-                        </div>
+                {filteredData.map((product) => (
+                  <Col
+                    className="gutter-row"
+                    span={6}
+                    sm={24}
+                    lg={8}
+                    md={12}
+                    key={product._id}
+                  >
+                    <div className={styles.card}>
+                      <img src={product.img} alt="" />
+                      <h3>{product.title}</h3>
+                      <div className={styles.prices}>
+                        <p>${product.price}</p>
+                        <span>${product.discount}</span>
                       </div>
-                    </Col>
-                  ))}
+                      <div className={styles.button}>
+                        <Button
+                          onClick={() => {
+                            let dublicateItem = basket.find(
+                              (x) => x._id === product._id
+                            );
+                            if (dublicateItem) {
+                              dublicateItem.count += 1;
+                              setBasket([...basket]);
+                              localStorage.setItem(
+                                "basket",
+                                JSON.stringify([...basket])
+                              );
+                            } else {
+                              const newBasket = { ...product, count: 1 };
+                              setBasket([...basket, newBasket]);
+                              localStorage.setItem(
+                                "basket",
+                                JSON.stringify([...basket, newBasket])
+                              );
+                            }
+                          }}
+                        >
+                          <ShoppingBasketIcon style={{ color: "black" }} />
+                        </Button>
+                        <button className={styles.detail}>
+                          <Link
+                            to={`detail/${product._id}`}
+                            style={{ textDecoration: "none", color: "black" }}
+                          >
+                            Detail
+                          </Link>
+                        </button>
+                        <Button onClick={()=>handleWishlist(product)} style={{backgroundColor:"white",border:"1px solid black"}}>
+                          <FavoriteIcon style={{color: fav.find((x)=>x._id===product._id) ? "red" :"inherit"}}/>
+                        </Button>
+                      </div>
+                    </div>
+                  </Col>
+                ))}
               </div>
             </Row>
           </div>

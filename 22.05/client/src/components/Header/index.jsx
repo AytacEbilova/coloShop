@@ -3,8 +3,10 @@ import { Link } from "react-router-dom"
 import styles from "../Header/header.module.scss"
 import { useContext } from "react"
 import { BasketContext } from "../../context/basketContext"
+import { FavContext } from "../../context/wishlistContext"
 const Header = () => {
-    const{basket}=useContext(BasketContext)
+    const{basket}=useContext(BasketContext);
+    const{fav}=useContext(FavContext);
   return (
     <div>
         <header>
@@ -24,6 +26,9 @@ const Header = () => {
                         </li>
                         <li>
                             <Link className={styles.link} to={"basket"}>Basket <sub>{basket.length}</sub></Link>
+                        </li>
+                        <li>
+                            <Link className={styles.link} to={"basket"}>Wishlist <sub>{fav.length}</sub></Link>
                         </li>
                     </ul>
                 </div>
